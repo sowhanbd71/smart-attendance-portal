@@ -37,7 +37,7 @@
     class="no-print hidden fixed top-4 right-4 z-50 glass-card px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold text-main border border-cyan-500/40 fade-up"
   >
     <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-    <span id="loginView"></span>
+    <span id="toastText"></span>
   </div>
 
   <!-- ==================== LOGIN SCREEN ==================== -->
@@ -368,7 +368,16 @@
 
       <!-- ==================== SECTION 3: ATTENDANCE HISTORY ==================== -->
       <section id="secHistory" class="glass-card rounded-2xl p-4 sm:p-5 space-y-4">
-        <div class="no-print grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+            <div>
+              <h4 class="text-sm font-extrabold text-main">Attendance History</h4>
+              <p id="logsCountBadge" class="text-[11px] font-mono-code text-dim">0 records</p>
+            </div>
+          </div>
+
+          <div class="no-print grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <div class="relative col-span-2 sm:col-span-1">
               <i data-lucide="search" class="w-3.5 h-3.5 text-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
               <input
@@ -390,6 +399,7 @@
               <option value="LV">Leave</option>
             </select>
           </div>
+        </div>
 
         <!-- Desktop Table -->
         <div class="hidden sm:block overflow-x-auto border border-line rounded-xl">
