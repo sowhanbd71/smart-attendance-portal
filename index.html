@@ -1,70 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1120" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Smart Attendance — Student Portal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .fade-in {
-      animation: fadeIn 0.25s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body class="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
 
-  <!-- =========================================================
-       CONFIGURATION: Replace ONLY these 2 values from Supabase
-       (Project Settings -> API -> Project URL & Anon/Public Key)
-       ========================================================= -->
-  <script>
-    const SUPABASE_URL = "https://pyyuceqlhdftnfegdark.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_LhES_UN3n4CrLif5nvFYKQ_ti1-gXN2";
-  </script>
+  <link rel="icon" type="image/png" href="./logo.png" />
+  <link rel="apple-touch-icon" href="./logo.png" />
+  <link rel="manifest" href="./manifest.json" />
+
+  <!-- Modern Typography: Plus Jakarta Sans + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="min-h-screen relative">
+  <!-- Ambient Background Glow -->
+  <div class="aurora-bg" aria-hidden="true">
+    <div class="aurora-blob-1"></div>
+    <div class="aurora-blob-2"></div>
+  </div>
+
+  <!-- Floating Toast -->
+  <div
+    id="toastBox"
+    class="no-print hidden fixed top-4 right-4 z-50 glass-card px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold text-main border border-cyan-500/40 fade-up"
+  >
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+    <span id="toastText"></span>
+  </div>
 
   <!-- ==================== LOGIN SCREEN ==================== -->
-  <div id="loginView" class="min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl fade-in">
-      <!-- Brand Header -->
-      <div class="text-center space-y-2 mb-7">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-          </svg>
+  <div id="loginView" class="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+    <!-- Top-Right Theme Button -->
+    <button
+      id="themeToggleLogin"
+      type="button"
+      title="Switch Theme"
+      class="no-print fixed top-4 right-4 p-2.5 rounded-xl portal-btn-secondary cursor-pointer"
+    >
+      <i data-lucide="sun" class="w-4 h-4 text-amber-400 theme-icon-sun"></i>
+      <i data-lucide="moon" class="w-4 h-4 text-blue-500 theme-icon-moon hidden"></i>
+    </button>
+
+    <div class="w-full max-w-md glass-card rounded-3xl p-6 sm:p-8 fade-up">
+      <!-- Brand Identity -->
+      <div class="text-center space-y-2.5 mb-7">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-600/25 to-cyan-500/20 border border-blue-500/35 flex items-center justify-center shadow-lg shadow-blue-600/15 overflow-hidden">
+          <img id="brandLogoImg" src="./logo.png" alt="Smart Attendance" class="w-12 h-12 object-contain" />
+          <i id="brandLogoFallback" data-lucide="shield-check" class="hidden w-8 h-8 text-blue-400"></i>
         </div>
-        <h1 class="text-xl font-extrabold text-white tracking-tight">Smart Attendance</h1>
-        <p id="brandSubtitle" class="text-xs font-semibold text-cyan-400">Student &amp; Parent Live Portal</p>
-        <p id="brandOrgFull" class="text-xs text-slate-400"></p>
+        <div>
+          <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 mb-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Live Student Portal
+          </span>
+          <h1 class="text-2xl font-extrabold text-main tracking-tight">Smart Attendance</h1>
+          <p id="brandSubtitle" class="text-xs font-bold text-blue-400 mt-0.5">BAUST • EEE</p>
+          <p id="brandOrgFull" class="text-xs text-sub mt-0.5"></p>
+        </div>
       </div>
 
-      <!-- Login Form -->
+      <!-- Credentials Form -->
       <form id="loginForm" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          <label class="block text-[11px] font-bold text-sub uppercase tracking-wider mb-1.5">
             Student ID
           </label>
-          <input
-            id="studentIdInput"
-            type="text"
-            required
-            autocomplete="username"
-            placeholder="e.g. 0802310105131009"
-            class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-base font-mono text-white outline-none transition"
-          />
+          <div class="relative">
+            <i data-lucide="id-card" class="w-4 h-4 text-dim absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input
+              id="studentIdInput"
+              type="text"
+              required
+              autocomplete="username"
+              placeholder="Enter your Student ID"
+              class="portal-input w-full rounded-xl pl-10 pr-4 py-3 text-sm font-mono-code font-medium"
+            />
+          </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Portal PIN (4–6 Digits)
+          <label class="block text-[11px] font-bold text-sub uppercase tracking-wider mb-1.5">
+            Portal PIN
           </label>
           <div class="relative">
+            <i data-lucide="key-round" class="w-4 h-4 text-dim absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             <input
               id="pinInput"
               type="password"
@@ -72,54 +103,77 @@
               required
               maxlength="6"
               autocomplete="current-password"
-              placeholder="••••"
-              class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 text-base font-mono tracking-widest text-white outline-none transition"
+              placeholder="4–6 digit PIN"
+              class="portal-input w-full rounded-xl pl-10 pr-14 py-3 text-sm font-mono-code tracking-widest"
             />
             <button
               type="button"
               id="togglePinBtn"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-white px-2 py-1"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-sub hover:text-main px-1.5 py-1 cursor-pointer"
             >
               Show
             </button>
           </div>
         </div>
 
-        <div id="loginError" class="hidden rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs px-3.5 py-2.5"></div>
+        <label class="flex items-center gap-2 text-xs text-sub cursor-pointer select-none">
+          <input id="rememberCheck" type="checkbox" checked class="w-4 h-4 accent-blue-600 rounded cursor-pointer" />
+          <span>Keep me signed in on this device</span>
+        </label>
+
+        <div
+          id="loginError"
+          class="hidden rounded-xl bg-rose-500/15 border border-rose-500/35 text-rose-400 text-xs px-3.5 py-2.5 flex items-center gap-2"
+        >
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="loginErrorText"></span>
+        </div>
 
         <button
           id="loginBtn"
           type="submit"
-          class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-bold transition shadow-lg shadow-blue-600/25 cursor-pointer"
+          class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 text-white text-sm font-bold transition shadow-lg shadow-blue-600/25 cursor-pointer"
         >
-          View My Attendance
+          Sign In to Attendance Portal
         </button>
       </form>
 
-      <div class="mt-6 pt-4 border-t border-slate-800/80 text-center space-y-1">
-        <p id="loginSyncMeta" class="text-[11px] font-mono text-slate-500">Connecting to cloud...</p>
-        <p class="text-[11px] text-slate-500">Forgot your PIN? Contact your department office.</p>
+      <div class="mt-6 pt-4 border-t border-line text-center space-y-1">
+        <p id="loginSyncMeta" class="text-[11px] font-mono-code text-dim">Connecting to cloud...</p>
+        <p class="text-[11px] text-dim">Forgot your PIN? Contact your department office.</p>
       </div>
     </div>
   </div>
 
   <!-- ==================== DASHBOARD SCREEN ==================== -->
-  <div id="dashboardView" class="hidden min-h-screen pb-12 fade-in">
-    <!-- Top Sticky Bar -->
-    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
-      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <h2 class="text-sm sm:text-base font-extrabold text-white truncate">Smart Attendance</h2>
+  <div id="dashboardView" class="hidden relative z-10 min-h-screen pb-24 md:pb-12 fade-up">
+    <!-- Official Print Header (Only visible in PDF / Print) -->
+    <div class="print-only max-w-5xl mx-auto px-4 pt-4 pb-3 border-b-2 border-slate-800 mb-4">
+      <h1 id="printHeaderOrg" class="text-xl font-extrabold text-slate-900"></h1>
+      <div class="flex items-center justify-between text-xs text-slate-600 mt-1">
+        <span id="printHeaderDept"></span>
+        <span id="printHeaderDate" class="font-mono-code"></span>
+      </div>
+    </div>
+
+    <!-- Sticky Glass App Header -->
+    <header class="no-print sticky top-0 z-30 glass-header">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center shrink-0 overflow-hidden">
+            <img id="dashLogoImg" src="./logo.png" alt="Logo" class="w-7 h-7 object-contain" />
+            <i id="dashLogoFallback" data-lucide="shield-check" class="hidden w-5 h-5 text-blue-400"></i>
           </div>
-          <p id="dashOrgLine" class="text-[11px] text-slate-400 truncate"></p>
+          <div class="min-w-0">
+            <h2 class="text-sm font-extrabold text-main truncate">Smart Attendance</h2>
+            <p id="dashOrgLine" class="text-[11px] font-semibold text-blue-400 truncate"></p>
+          </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2">
           <select
             id="semesterSelect"
-            class="bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-slate-100 outline-none"
+            class="portal-input rounded-xl px-2.5 py-1.5 text-xs font-semibold cursor-pointer max-w-[140px] sm:max-w-none"
           >
             <option value="">All Semesters</option>
           </select>
@@ -127,429 +181,275 @@
           <button
             id="refreshBtn"
             type="button"
-            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 cursor-pointer"
+            title="Refresh Cloud Data"
+            class="p-2 rounded-xl portal-btn-secondary cursor-pointer"
           >
-            Refresh
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400"></i>
+          </button>
+
+          <button
+            id="printBtn"
+            type="button"
+            title="Print / Save PDF Report Card"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl portal-btn-secondary text-xs font-semibold cursor-pointer"
+          >
+            <i data-lucide="printer" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>PDF</span>
+          </button>
+
+          <button
+            id="themeToggleDash"
+            type="button"
+            title="Switch Light / Dark Mode"
+            class="p-2 rounded-xl portal-btn-secondary cursor-pointer"
+          >
+            <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400 theme-icon-sun"></i>
+            <i data-lucide="moon" class="w-3.5 h-3.5 text-blue-500 theme-icon-moon hidden"></i>
           </button>
 
           <button
             id="logoutBtn"
             type="button"
-            class="px-3 py-1.5 rounded-xl bg-rose-600/15 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-semibold border border-rose-500/30 transition cursor-pointer"
+            title="Sign Out"
+            class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-bold transition cursor-pointer"
           >
-            Sign Out
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Sign Out</span>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 pt-5 space-y-5">
-      <!-- Student Profile Card -->
-      <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/40 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
-        <div class="space-y-1">
-          <span class="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/30" id="dashBatchBadge">
-            Batch --
-          </span>
-          <h3 id="dashStudentName" class="text-xl sm:text-2xl font-extrabold text-white">--</h3>
-          <p id="dashStudentId" class="text-xs font-mono text-slate-400">ID: --</p>
+    <main class="max-w-5xl mx-auto px-4 pt-5 space-y-6">
+      <!-- ==================== SECTION 1: OVERVIEW ==================== -->
+      <section id="secOverview" class="space-y-4">
+        <!-- Hero Student Profile + Animated Overall Donut Ring -->
+        <div class="glass-card rounded-3xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+          <div class="md:col-span-8 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                id="dashBatchBadge"
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30"
+              >
+                Batch --
+              </span>
+              <span
+                id="dashSessionName"
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+              >
+                Active Session
+              </span>
+            </div>
+
+            <div>
+              <h3 id="dashStudentName" class="text-2xl sm:text-3xl font-extrabold text-main tracking-tight">--</h3>
+              <p class="text-xs font-mono-code text-sub mt-1 flex items-center gap-1.5">
+                <i data-lucide="hash" class="w-3.5 h-3.5 text-blue-400"></i>
+                <span id="dashStudentId">--</span>
+              </p>
+            </div>
+
+            <div class="pt-1 space-y-1">
+              <span id="overallBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border">
+                --
+              </span>
+              <p id="dashPolicyText" class="text-[11px] text-dim pt-1"></p>
+              <p class="text-[11px] font-mono-code text-dim flex items-center gap-1.5">
+                <i data-lucide="cloud-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Synced: <span id="dashLastSynced">--</span></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Large Animated Overall Attendance Donut -->
+          <div class="md:col-span-4 flex flex-col items-center justify-center">
+            <div class="relative w-36 h-36 flex items-center justify-center">
+              <svg class="w-36 h-36" viewBox="0 0 128 128">
+                <circle class="ring-track" cx="64" cy="64" r="54" fill="none" stroke-width="10"></circle>
+                <circle
+                  id="overallRingProgress"
+                  class="ring-progress"
+                  cx="64"
+                  cy="64"
+                  r="54"
+                  fill="none"
+                  stroke="#3b82f6"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  stroke-dasharray="339.29"
+                  stroke-dashoffset="339.29"
+                ></circle>
+              </svg>
+              <div class="absolute text-center">
+                <p id="overallRingPct" class="text-2xl font-extrabold font-mono-code text-main">--%</p>
+                <p id="overallRingLabel" class="text-[10px] font-semibold text-dim uppercase tracking-wider mt-0.5">--</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="text-left sm:text-right space-y-1">
-          <p id="dashSessionName" class="text-xs font-semibold text-cyan-400"></p>
-          <p id="dashLastSynced" class="text-[11px] font-mono text-slate-400"></p>
-          <p id="dashPolicyText" class="text-[11px] text-slate-500"></p>
+        <!-- 4 Modern KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-sub">Present / Leave</span>
+              <span class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpiPresent" class="text-2xl sm:text-3xl font-extrabold font-mono-code text-emerald-400 mt-2">0</p>
+            <p id="kpiLeaveSub" class="text-[11px] text-dim mt-1">Approved Leave: 0</p>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-sub">Late Arrivals</span>
+              <span class="p-1.5 rounded-lg bg-amber-500/15 text-amber-400">
+                <i data-lucide="clock-alert" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpiLate" class="text-2xl sm:text-3xl font-extrabold font-mono-code text-amber-400 mt-2">0</p>
+            <p id="kpiPenaltySub" class="text-[11px] text-dim mt-1">Penalty Absents: 0</p>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-sub">Absent Classes</span>
+              <span class="p-1.5 rounded-lg bg-rose-500/15 text-rose-400">
+                <i data-lucide="x-circle" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpiAbsent" class="text-2xl sm:text-3xl font-extrabold font-mono-code text-rose-400 mt-2">0</p>
+            <p id="kpiTotalSub" class="text-[11px] text-dim mt-1">Total Classes: 0</p>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-sub">Enrolled Courses</span>
+              <span class="p-1.5 rounded-lg bg-blue-500/15 text-blue-400">
+                <i data-lucide="book-open-check" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpiCoursesCount" class="text-2xl sm:text-3xl font-extrabold font-mono-code text-main mt-2">0</p>
+            <p id="kpiEligibleSub" class="text-[11px] text-dim mt-1">--</p>
+          </div>
+        </div>
+
+        <!-- Mobile-Only Quick Course Preview (Hidden on Desktop where Full Courses show below) -->
+        <div class="md:hidden no-print glass-card rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-main">Quick Course Snapshot</h4>
+            <button
+              id="viewAllCoursesBtn"
+              type="button"
+              class="hidden text-xs font-bold text-blue-400 cursor-pointer"
+            >
+              View All →
+            </button>
+          </div>
+          <div id="overviewCoursesPreview" class="space-y-2"></div>
         </div>
       </section>
 
-      <!-- Overall Summary KPI Cards -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-semibold">Overall Attendance</p>
-          <p id="kpiOverallPct" class="text-2xl sm:text-3xl font-extrabold text-white font-mono mt-1">--%</p>
-          <p id="kpiOverallStatus" class="text-[11px] font-semibold mt-1 text-slate-400">--</p>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-semibold">Present / Leave</p>
-          <p id="kpiPresent" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono mt-1">0</p>
-          <p id="kpiLeaveSub" class="text-[11px] text-slate-500 mt-1">Approved Leave: 0</p>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-semibold">Late Arrivals</p>
-          <p id="kpiLate" class="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono mt-1">0</p>
-          <p id="kpiPenaltySub" class="text-[11px] text-slate-500 mt-1">Penalty Absents: 0</p>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-semibold">Absent Classes</p>
-          <p id="kpiAbsent" class="text-2xl sm:text-3xl font-extrabold text-rose-400 font-mono mt-1">0</p>
-          <p id="kpiTotalSub" class="text-[11px] text-slate-500 mt-1">Total Classes: 0</p>
-        </div>
-      </section>
-
-      <!-- Course-Wise Attendance & Exam Eligibility -->
-      <section class="space-y-3">
+      <!-- ==================== SECTION 2: COURSES & PREDICTOR ==================== -->
+      <section id="secCourses" class="space-y-3.5">
         <div class="flex items-center justify-between">
-          <h4 class="text-sm font-bold text-white uppercase tracking-wider">Course-Wise Attendance &amp; Eligibility</h4>
-          <span id="courseCountBadge" class="text-xs font-mono text-slate-400">0 courses</span>
+          <div class="flex items-center gap-2">
+            <i data-lucide="graduation-cap" class="w-4 h-4 text-cyan-400"></i>
+            <h4 class="text-sm font-extrabold text-main uppercase tracking-wider">
+              Course-Wise Progress &amp; Smart Predictor
+            </h4>
+          </div>
+          <span id="courseCountBadge" class="text-xs font-mono-code text-dim">0 courses</span>
         </div>
 
         <div id="coursesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </section>
 
-      <!-- Recent Attendance History -->
-      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h4 class="text-sm font-bold text-white">Recent Attendance History</h4>
-            <p class="text-xs text-slate-400">Latest recorded class logs</p>
+      <!-- ==================== SECTION 3: ATTENDANCE HISTORY ==================== -->
+      <section id="secHistory" class="glass-card rounded-2xl p-4 sm:p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+            <div>
+              <h4 class="text-sm font-extrabold text-main">Attendance History</h4>
+              <p id="logsCountBadge" class="text-[11px] font-mono-code text-dim">0 records</p>
+            </div>
           </div>
-          <select
-            id="logCourseFilter"
-            class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 outline-none"
-          >
-            <option value="ALL">All Courses</option>
-          </select>
+
+          <div class="no-print flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div class="relative flex-1 sm:flex-initial">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input
+                id="logSearchInput"
+                type="text"
+                placeholder="Date, course, room..."
+                class="portal-input w-full sm:w-44 rounded-xl pl-8 pr-3 py-1.5 text-xs"
+              />
+            </div>
+
+            <select id="logCourseFilter" class="portal-input rounded-xl px-2.5 py-1.5 text-xs cursor-pointer">
+              <option value="ALL">All Courses</option>
+            </select>
+
+            <select id="logStatusFilter" class="portal-input rounded-xl px-2.5 py-1.5 text-xs cursor-pointer">
+              <option value="ALL">All Status</option>
+              <option value="P">Present</option>
+              <option value="L">Late</option>
+              <option value="LV">Leave</option>
+            </select>
+          </div>
         </div>
 
-        <div class="overflow-x-auto border border-slate-800 rounded-xl">
+        <!-- Desktop Table -->
+        <div class="hidden sm:block overflow-x-auto border border-line rounded-xl">
           <table class="w-full text-xs text-left">
-            <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+            <thead class="bg-chip text-dim uppercase border-b border-line">
               <tr>
-                <th class="py-2.5 px-3.5">Date</th>
-                <th class="py-2.5 px-3.5">Course</th>
-                <th class="py-2.5 px-3.5">Room</th>
-                <th class="py-2.5 px-3.5">Time</th>
-                <th class="py-2.5 px-3.5 text-right">Status</th>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4">Course</th>
+                <th class="py-3 px-4">Room</th>
+                <th class="py-3 px-4">Time</th>
+                <th class="py-3 px-4 text-right">Status</th>
               </tr>
             </thead>
-            <tbody id="logsTableBody" class="divide-y divide-slate-800/70"></tbody>
+            <tbody id="logsTableBody" class="divide-y divide-slate-800/40"></tbody>
           </table>
         </div>
+
+        <!-- Mobile Native-Style Cards -->
+        <div id="logsMobileList" class="sm:hidden space-y-2"></div>
       </section>
     </main>
+
+    <!-- Mobile App Bottom Navigation Bar -->
+    <nav id="mobileNav" class="md:hidden no-print mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40">
+      <div class="grid grid-cols-3 max-w-md mx-auto px-2 py-1.5">
+        <button type="button" data-tab="overview" class="mobile-nav-btn active flex flex-col items-center gap-0.5 py-1 cursor-pointer">
+          <span class="nav-pill px-4 py-1 rounded-full transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          </span>
+          <span class="text-[10px] font-bold">Overview</span>
+        </button>
+
+        <button type="button" data-tab="courses" class="mobile-nav-btn flex flex-col items-center gap-0.5 py-1 cursor-pointer">
+          <span class="nav-pill px-4 py-1 rounded-full transition">
+            <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+          </span>
+          <span class="text-[10px] font-bold">Courses</span>
+        </button>
+
+        <button type="button" data-tab="history" class="mobile-nav-btn flex flex-col items-center gap-0.5 py-1 cursor-pointer">
+          <span class="nav-pill px-4 py-1 rounded-full transition">
+            <i data-lucide="history" class="w-4 h-4"></i>
+          </span>
+          <span class="text-[10px] font-bold">History</span>
+        </button>
+      </div>
+    </nav>
   </div>
 
-  <script>
-    const session = { studentId: "", pin: "", semesterId: null };
-    let cachedLogs = [];
-
-    function esc(str) {
-      return String(str ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    function formatSyncTime(iso) {
-      if (!iso) return "Not synced yet";
-      try {
-        const d = new Date(iso);
-        return isNaN(d.getTime()) ? String(iso) : d.toLocaleString();
-      } catch {
-        return String(iso);
-      }
-    }
-
-    async function callRpc(fnName, body = {}) {
-      const base = SUPABASE_URL.trim().replace(/\/+$/, "");
-      if (!base.startsWith("https://") || base.includes("তোমার-প্রজেক্ট")) {
-        throw new Error("Portal is not configured yet. Please set SUPABASE_URL and SUPABASE_ANON_KEY.");
-      }
-
-      const res = await fetch(`${base}/rest/v1/rpc/${fnName}`, {
-        method: "POST",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY.trim(),
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY.trim()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(data?.message || data?.hint || `Cloud error (${res.status})`);
-      }
-      return data;
-    }
-
-    async function loadBranding() {
-      try {
-        const b = await callRpc("get_portal_branding", {});
-        const deptPart = b.org_department ? ` • ${b.org_department}` : "";
-        document.getElementById("brandSubtitle").textContent = `${b.org_short_name || "Smart Attendance"}${deptPart} — Student Portal`;
-        document.getElementById("brandOrgFull").textContent = b.org_full_name || "";
-        document.getElementById("loginSyncMeta").textContent = b.last_synced_at
-          ? `Last Synced: ${formatSyncTime(b.last_synced_at)}`
-          : "Cloud Ready";
-      } catch (err) {
-        document.getElementById("loginSyncMeta").textContent = err.message;
-      }
-    }
-
-    function renderLogs(filterCourse = "ALL") {
-      const tbody = document.getElementById("logsTableBody");
-      const rows = filterCourse === "ALL"
-        ? cachedLogs
-        : cachedLogs.filter((l) => l.course_code === filterCourse);
-
-      if (!rows.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="5" class="py-8 text-center text-slate-500">
-              No attendance logs recorded for this selection yet.
-            </td>
-          </tr>`;
-        return;
-      }
-
-      const statusBadge = (st) => {
-        if (st === "P") return `<span class="px-2 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Present</span>`;
-        if (st === "L") return `<span class="px-2 py-0.5 rounded-md font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">Late</span>`;
-        if (st === "LV") return `<span class="px-2 py-0.5 rounded-md font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Leave</span>`;
-        return `<span class="px-2 py-0.5 rounded-md font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">${esc(st)}</span>`;
-      };
-
-      tbody.innerHTML = rows.map((l) => `
-        <tr class="hover:bg-slate-800/40">
-          <td class="py-2.5 px-3.5 font-mono text-slate-200 whitespace-nowrap">${esc(l.date)}</td>
-          <td class="py-2.5 px-3.5 font-bold text-white whitespace-nowrap">${esc(l.course_code)}</td>
-          <td class="py-2.5 px-3.5 text-slate-400 whitespace-nowrap">${esc(l.room_name || "—")}</td>
-          <td class="py-2.5 px-3.5 font-mono text-slate-400 whitespace-nowrap">${esc(l.marked_time || "—")}</td>
-          <td class="py-2.5 px-3.5 text-right whitespace-nowrap">${statusBadge(l.status)}</td>
-        </tr>
-      `).join("");
-    }
-
-    function renderDashboard(data) {
-      const { student, config, semesters, courses, recent_logs } = data;
-      cachedLogs = recent_logs || [];
-
-      const deptPart = config.org_department ? ` • ${config.org_department}` : "";
-      document.getElementById("dashOrgLine").textContent = `${config.org_short_name || ""}${deptPart} — ${config.org_full_name || ""}`;
-      document.getElementById("dashBatchBadge").textContent = `Batch ${student.batch}`;
-      document.getElementById("dashStudentName").textContent = student.name;
-      document.getElementById("dashStudentId").textContent = `Student ID: ${student.student_id}`;
-      document.getElementById("dashSessionName").textContent = config.active_session_name ? `Active Session: ${config.active_session_name}` : "";
-      document.getElementById("dashLastSynced").textContent = `Last Synced: ${formatSyncTime(config.last_synced_at)}`;
-
-      const penText = config.late_penalty_count > 0 ? `${config.late_penalty_count} Late = 1 Absent` : "No Late Penalty";
-      document.getElementById("dashPolicyText").textContent =
-        `Policy: ${penText} • Collegiate ≥ ${config.collegiate_threshold}% • Non-Collegiate ≥ ${config.non_collegiate_threshold}%`;
-
-      // Populate Semesters dropdown without losing current selection
-      const semSelect = document.getElementById("semesterSelect");
-      const currentVal = session.semesterId === null ? "" : String(session.semesterId);
-      semSelect.innerHTML = `<option value="">All Semesters</option>` + (semesters || []).map((s) =>
-        `<option value="${s.id}">${esc(s.name)}${s.is_active ? " (Active)" : ""}</option>`
-      ).join("");
-      semSelect.value = currentVal;
-
-      // Aggregate Overall KPIs
-      let totClasses = 0, totPresent = 0, totLate = 0, totLeave = 0, totAbsent = 0, totPenalty = 0;
-      (courses || []).forEach((c) => {
-        totClasses += Number(c.total_classes || 0);
-        totPresent += Number(c.present || 0);
-        totLate += Number(c.late || 0);
-        totLeave += Number(c.leave || 0);
-        totAbsent += Number(c.absent || 0);
-        totPenalty += Number(c.late_penalty_absents || 0);
-      });
-
-      const effectiveAttended = Math.max(0, (totPresent + totLate + totLeave) - totPenalty);
-      const overallPct = totClasses > 0 ? ((effectiveAttended / totClasses) * 100).toFixed(1) : null;
-
-      document.getElementById("kpiOverallPct").textContent = overallPct !== null ? `${overallPct}%` : "N/A";
-      const statusEl = document.getElementById("kpiOverallStatus");
-      if (overallPct === null) {
-        statusEl.textContent = "No classes held yet";
-        statusEl.className = "text-[11px] font-semibold mt-1 text-slate-400";
-      } else if (Number(overallPct) >= config.collegiate_threshold) {
-        statusEl.textContent = "Collegiate (Eligible)";
-        statusEl.className = "text-[11px] font-semibold mt-1 text-emerald-400";
-      } else if (Number(overallPct) >= config.non_collegiate_threshold) {
-        statusEl.textContent = "Non-Collegiate (Warning)";
-        statusEl.className = "text-[11px] font-semibold mt-1 text-amber-400";
-      } else {
-        statusEl.textContent = "Dis-Collegiate (Shortage)";
-        statusEl.className = "text-[11px] font-semibold mt-1 text-rose-400";
-      }
-
-      document.getElementById("kpiPresent").textContent = totPresent + totLeave;
-      document.getElementById("kpiLeaveSub").textContent = `Approved Leave: ${totLeave}`;
-      document.getElementById("kpiLate").textContent = totLate;
-      document.getElementById("kpiPenaltySub").textContent = `Penalty Absents: ${totPenalty}`;
-      document.getElementById("kpiAbsent").textContent = totAbsent;
-      document.getElementById("kpiTotalSub").textContent = `Total Classes: ${totClasses}`;
-
-      // Render Course Cards
-      const courseList = courses || [];
-      document.getElementById("courseCountBadge").textContent = `${courseList.length} course(s)`;
-      const coursesEl = document.getElementById("coursesContainer");
-
-      if (!courseList.length) {
-        coursesEl.innerHTML = `
-          <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-400">
-            No attendance records have been synced for Batch ${esc(student.batch)} in this semester yet.
-          </div>`;
-      } else {
-        coursesEl.innerHTML = courseList.map((c) => {
-          const pct = Number(c.percentage || 0);
-          let badgeCls = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-          let barCls = "bg-emerald-500";
-          if (c.eligibility === "Non-Collegiate") {
-            badgeCls = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-            barCls = "bg-amber-500";
-          } else if (c.eligibility === "Dis-Collegiate") {
-            badgeCls = "bg-rose-500/15 text-rose-300 border-rose-500/30";
-            barCls = "bg-rose-500";
-          }
-
-          return `
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div class="flex items-center justify-between gap-2">
-                <h5 class="text-base font-extrabold text-white font-mono">${esc(c.course_code)}</h5>
-                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${badgeCls}">
-                  ${esc(c.eligibility)}
-                </span>
-              </div>
-
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-slate-400">Attendance Rate</span>
-                  <span class="font-mono font-bold text-white">${pct.toFixed(1)}%</span>
-                </div>
-                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div class="h-full ${barCls} rounded-full transition-all" style="width: ${Math.min(100, pct)}%"></div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-4 gap-2 text-center bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 text-[11px]">
-                <div>
-                  <p class="text-slate-500">Present</p>
-                  <p class="font-mono font-bold text-emerald-400 mt-0.5">${c.present}</p>
-                </div>
-                <div>
-                  <p class="text-slate-500">Late</p>
-                  <p class="font-mono font-bold text-amber-400 mt-0.5">${c.late}</p>
-                </div>
-                <div>
-                  <p class="text-slate-500">Leave</p>
-                  <p class="font-mono font-bold text-cyan-400 mt-0.5">${c.leave}</p>
-                </div>
-                <div>
-                  <p class="text-slate-500">Absent</p>
-                  <p class="font-mono font-bold text-rose-400 mt-0.5">${c.absent}</p>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span>Total Classes Held: <strong class="text-slate-200 font-mono">${c.total_classes}</strong></span>
-                ${c.late_penalty_absents > 0 ? `<span class="text-amber-400">Late Penalty: -${c.late_penalty_absents}</span>` : ""}
-              </div>
-            </div>`;
-        }).join("");
-      }
-
-      // Course filter for recent logs
-      const uniqueCourses = [...new Set(cachedLogs.map((l) => l.course_code))].sort();
-      const logFilter = document.getElementById("logCourseFilter");
-      logFilter.innerHTML = `<option value="ALL">All Courses</option>` +
-        uniqueCourses.map((cc) => `<option value="${esc(cc)}">${esc(cc)}</option>`).join("");
-      renderLogs("ALL");
-
-      document.getElementById("loginView").classList.add("hidden");
-      document.getElementById("dashboardView").classList.remove("hidden");
-    }
-
-    async function fetchStudentPortal() {
-      const data = await callRpc("get_student_portal_data", {
-        p_student_id: session.studentId,
-        p_pin: session.pin,
-        p_semester_id: session.semesterId,
-      });
-      if (!data || !data.ok) {
-        throw new Error(data?.error || "Invalid Student ID or Portal PIN.");
-      }
-      renderDashboard(data);
-    }
-
-    // Event Listeners
-    document.getElementById("togglePinBtn").addEventListener("click", () => {
-      const input = document.getElementById("pinInput");
-      const btn = document.getElementById("togglePinBtn");
-      if (input.type === "password") {
-        input.type = "text";
-        btn.textContent = "Hide";
-      } else {
-        input.type = "password";
-        btn.textContent = "Show";
-      }
-    });
-
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errBox = document.getElementById("loginError");
-      const btn = document.getElementById("loginBtn");
-      errBox.classList.add("hidden");
-      btn.disabled = true;
-      btn.textContent = "Verifying...";
-
-      session.studentId = document.getElementById("studentIdInput").value.trim();
-      session.pin = document.getElementById("pinInput").value.trim();
-      session.semesterId = null;
-
-      try {
-        await fetchStudentPortal();
-      } catch (err) {
-        errBox.textContent = err.message;
-        errBox.classList.remove("hidden");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "View My Attendance";
-      }
-    });
-
-    document.getElementById("semesterSelect").addEventListener("change", async (e) => {
-      session.semesterId = e.target.value ? Number(e.target.value) : null;
-      try {
-        await fetchStudentPortal();
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-
-    document.getElementById("refreshBtn").addEventListener("click", async () => {
-      const btn = document.getElementById("refreshBtn");
-      btn.textContent = "...";
-      try {
-        await fetchStudentPortal();
-      } catch (err) {
-        alert(err.message);
-      } finally {
-        btn.textContent = "Refresh";
-      }
-    });
-
-    document.getElementById("logCourseFilter").addEventListener("change", (e) => {
-      renderLogs(e.target.value);
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      session.studentId = "";
-      session.pin = "";
-      session.semesterId = null;
-      document.getElementById("pinInput").value = "";
-      document.getElementById("dashboardView").classList.add("hidden");
-      document.getElementById("loginView").classList.remove("hidden");
-    });
-
-    // Load branding immediately on page open
-    loadBranding();
-  </script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>

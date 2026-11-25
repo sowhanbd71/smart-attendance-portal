@@ -1,0 +1,19 @@
+{
+  "name": "Smart Attendance — Student Portal",
+  "short_name": "Smart Attendance",
+  "description": "Live AI Attendance & Exam Eligibility Portal for Students and Parents",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#060b18",
+  "theme_color": "#0b1120",
+  "icons": [
+    {
+      "src": "./logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
