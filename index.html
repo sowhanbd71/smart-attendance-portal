@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Attendance — Student Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- =========================================================
+       CONFIGURATION: Replace ONLY these 2 values from Supabase
+       (Project Settings -> API -> Project URL & Anon/Public Key)
+       ========================================================= -->
+  <script>
+    const SUPABASE_URL = "https://pyyuceqlhdftnfegdark.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_LhES_UN3n4CrLif5nvFYKQ_ti1-gXN2";
+  </script>
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="loginView" class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl fade-in">
+      <!-- Brand Header -->
+      <div class="text-center space-y-2 mb-7">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+          </svg>
+        </div>
+        <h1 class="text-xl font-extrabold text-white tracking-tight">Smart Attendance</h1>
+        <p id="brandSubtitle" class="text-xs font-semibold text-cyan-400">Student &amp; Parent Live Portal</p>
+        <p id="brandOrgFull" class="text-xs text-slate-400"></p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Student ID
+          </label>
+          <input
+            id="studentIdInput"
+            type="text"
+            required
+            autocomplete="username"
+            placeholder="e.g. 0802310105131009"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-base font-mono text-white outline-none transition"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Portal PIN (4–6 Digits)
+          </label>
+          <div class="relative">
+            <input
+              id="pinInput"
+              type="password"
+              inputmode="numeric"
+              required
+              maxlength="6"
+              autocomplete="current-password"
+              placeholder="••••"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl pl-4 pr-12 py-3 text-base font-mono tracking-widest text-white outline-none transition"
+            />
+            <button
+              type="button"
+              id="togglePinBtn"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-white px-2 py-1"
+            >
+              Show
+            </button>
+          </div>
+        </div>
+
+        <div id="loginError" class="hidden rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs px-3.5 py-2.5"></div>
+
+        <button
+          id="loginBtn"
+          type="submit"
+          class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-bold transition shadow-lg shadow-blue-600/25 cursor-pointer"
+        >
+          View My Attendance
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-slate-800/80 text-center space-y-1">
+        <p id="loginSyncMeta" class="text-[11px] font-mono text-slate-500">Connecting to cloud...</p>
+        <p class="text-[11px] text-slate-500">Forgot your PIN? Contact your department office.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DASHBOARD SCREEN ==================== -->
+  <div id="dashboardView" class="hidden min-h-screen pb-12 fade-in">
+    <!-- Top Sticky Bar -->
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <h2 class="text-sm sm:text-base font-extrabold text-white truncate">Smart Attendance</h2>
+          </div>
+          <p id="dashOrgLine" class="text-[11px] text-slate-400 truncate"></p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select
+            id="semesterSelect"
+            class="bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-slate-100 outline-none"
+          >
+            <option value="">All Semesters</option>
+          </select>
+
+          <button
+            id="refreshBtn"
+            type="button"
+            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 cursor-pointer"
+          >
+            Refresh
+          </button>
+
+          <button
+            id="logoutBtn"
+            type="button"
+            class="px-3 py-1.5 rounded-xl bg-rose-600/15 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-semibold border border-rose-500/30 transition cursor-pointer"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 pt-5 space-y-5">
+      <!-- Student Profile Card -->
+      <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/40 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="space-y-1">
+          <span class="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/30" id="dashBatchBadge">
+            Batch --
+          </span>
+          <h3 id="dashStudentName" class="text-xl sm:text-2xl font-extrabold text-white">--</h3>
+          <p id="dashStudentId" class="text-xs font-mono text-slate-400">ID: --</p>
+        </div>
+
+        <div class="text-left sm:text-right space-y-1">
+          <p id="dashSessionName" class="text-xs font-semibold text-cyan-400"></p>
+          <p id="dashLastSynced" class="text-[11px] font-mono text-slate-400"></p>
+          <p id="dashPolicyText" class="text-[11px] text-slate-500"></p>
+        </div>
+      </section>
+
+      <!-- Overall Summary KPI Cards -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-semibold">Overall Attendance</p>
+          <p id="kpiOverallPct" class="text-2xl sm:text-3xl font-extrabold text-white font-mono mt-1">--%</p>
+          <p id="kpiOverallStatus" class="text-[11px] font-semibold mt-1 text-slate-400">--</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-semibold">Present / Leave</p>
+          <p id="kpiPresent" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono mt-1">0</p>
+          <p id="kpiLeaveSub" class="text-[11px] text-slate-500 mt-1">Approved Leave: 0</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-semibold">Late Arrivals</p>
+          <p id="kpiLate" class="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono mt-1">0</p>
+          <p id="kpiPenaltySub" class="text-[11px] text-slate-500 mt-1">Penalty Absents: 0</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-semibold">Absent Classes</p>
+          <p id="kpiAbsent" class="text-2xl sm:text-3xl font-extrabold text-rose-400 font-mono mt-1">0</p>
+          <p id="kpiTotalSub" class="text-[11px] text-slate-500 mt-1">Total Classes: 0</p>
+        </div>
+      </section>
+
+      <!-- Course-Wise Attendance & Exam Eligibility -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-bold text-white uppercase tracking-wider">Course-Wise Attendance &amp; Eligibility</h4>
+          <span id="courseCountBadge" class="text-xs font-mono text-slate-400">0 courses</span>
+        </div>
+
+        <div id="coursesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
+
+      <!-- Recent Attendance History -->
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 class="text-sm font-bold text-white">Recent Attendance History</h4>
+            <p class="text-xs text-slate-400">Latest recorded class logs</p>
+          </div>
+          <select
+            id="logCourseFilter"
+            class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 outline-none"
+          >
+            <option value="ALL">All Courses</option>
+          </select>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-800 rounded-xl">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-3.5">Date</th>
+                <th class="py-2.5 px-3.5">Course</th>
+                <th class="py-2.5 px-3.5">Room</th>
+                <th class="py-2.5 px-3.5">Time</th>
+                <th class="py-2.5 px-3.5 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const session = { studentId: "", pin: "", semesterId: null };
+    let cachedLogs = [];
+
+    function esc(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatSyncTime(iso) {
+      if (!iso) return "Not synced yet";
+      try {
+        const d = new Date(iso);
+        return isNaN(d.getTime()) ? String(iso) : d.toLocaleString();
+      } catch {
+        return String(iso);
+      }
+    }
+
+    async function callRpc(fnName, body = {}) {
+      const base = SUPABASE_URL.trim().replace(/\/+$/, "");
+      if (!base.startsWith("https://") || base.includes("তোমার-প্রজেক্ট")) {
+        throw new Error("Portal is not configured yet. Please set SUPABASE_URL and SUPABASE_ANON_KEY.");
+      }
+
+      const res = await fetch(`${base}/rest/v1/rpc/${fnName}`, {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY.trim(),
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY.trim()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.message || data?.hint || `Cloud error (${res.status})`);
+      }
+      return data;
+    }
+
+    async function loadBranding() {
+      try {
+        const b = await callRpc("get_portal_branding", {});
+        const deptPart = b.org_department ? ` • ${b.org_department}` : "";
+        document.getElementById("brandSubtitle").textContent = `${b.org_short_name || "Smart Attendance"}${deptPart} — Student Portal`;
+        document.getElementById("brandOrgFull").textContent = b.org_full_name || "";
+        document.getElementById("loginSyncMeta").textContent = b.last_synced_at
+          ? `Last Synced: ${formatSyncTime(b.last_synced_at)}`
+          : "Cloud Ready";
+      } catch (err) {
+        document.getElementById("loginSyncMeta").textContent = err.message;
+      }
+    }
+
+    function renderLogs(filterCourse = "ALL") {
+      const tbody = document.getElementById("logsTableBody");
+      const rows = filterCourse === "ALL"
+        ? cachedLogs
+        : cachedLogs.filter((l) => l.course_code === filterCourse);
+
+      if (!rows.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-slate-500">
+              No attendance logs recorded for this selection yet.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      const statusBadge = (st) => {
+        if (st === "P") return `<span class="px-2 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Present</span>`;
+        if (st === "L") return `<span class="px-2 py-0.5 rounded-md font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">Late</span>`;
+        if (st === "LV") return `<span class="px-2 py-0.5 rounded-md font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Leave</span>`;
+        return `<span class="px-2 py-0.5 rounded-md font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">${esc(st)}</span>`;
+      };
+
+      tbody.innerHTML = rows.map((l) => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="py-2.5 px-3.5 font-mono text-slate-200 whitespace-nowrap">${esc(l.date)}</td>
+          <td class="py-2.5 px-3.5 font-bold text-white whitespace-nowrap">${esc(l.course_code)}</td>
+          <td class="py-2.5 px-3.5 text-slate-400 whitespace-nowrap">${esc(l.room_name || "—")}</td>
+          <td class="py-2.5 px-3.5 font-mono text-slate-400 whitespace-nowrap">${esc(l.marked_time || "—")}</td>
+          <td class="py-2.5 px-3.5 text-right whitespace-nowrap">${statusBadge(l.status)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDashboard(data) {
+      const { student, config, semesters, courses, recent_logs } = data;
+      cachedLogs = recent_logs || [];
+
+      const deptPart = config.org_department ? ` • ${config.org_department}` : "";
+      document.getElementById("dashOrgLine").textContent = `${config.org_short_name || ""}${deptPart} — ${config.org_full_name || ""}`;
+      document.getElementById("dashBatchBadge").textContent = `Batch ${student.batch}`;
+      document.getElementById("dashStudentName").textContent = student.name;
+      document.getElementById("dashStudentId").textContent = `Student ID: ${student.student_id}`;
+      document.getElementById("dashSessionName").textContent = config.active_session_name ? `Active Session: ${config.active_session_name}` : "";
+      document.getElementById("dashLastSynced").textContent = `Last Synced: ${formatSyncTime(config.last_synced_at)}`;
+
+      const penText = config.late_penalty_count > 0 ? `${config.late_penalty_count} Late = 1 Absent` : "No Late Penalty";
+      document.getElementById("dashPolicyText").textContent =
+        `Policy: ${penText} • Collegiate ≥ ${config.collegiate_threshold}% • Non-Collegiate ≥ ${config.non_collegiate_threshold}%`;
+
+      // Populate Semesters dropdown without losing current selection
+      const semSelect = document.getElementById("semesterSelect");
+      const currentVal = session.semesterId === null ? "" : String(session.semesterId);
+      semSelect.innerHTML = `<option value="">All Semesters</option>` + (semesters || []).map((s) =>
+        `<option value="${s.id}">${esc(s.name)}${s.is_active ? " (Active)" : ""}</option>`
+      ).join("");
+      semSelect.value = currentVal;
+
+      // Aggregate Overall KPIs
+      let totClasses = 0, totPresent = 0, totLate = 0, totLeave = 0, totAbsent = 0, totPenalty = 0;
+      (courses || []).forEach((c) => {
+        totClasses += Number(c.total_classes || 0);
+        totPresent += Number(c.present || 0);
+        totLate += Number(c.late || 0);
+        totLeave += Number(c.leave || 0);
+        totAbsent += Number(c.absent || 0);
+        totPenalty += Number(c.late_penalty_absents || 0);
+      });
+
+      const effectiveAttended = Math.max(0, (totPresent + totLate + totLeave) - totPenalty);
+      const overallPct = totClasses > 0 ? ((effectiveAttended / totClasses) * 100).toFixed(1) : null;
+
+      document.getElementById("kpiOverallPct").textContent = overallPct !== null ? `${overallPct}%` : "N/A";
+      const statusEl = document.getElementById("kpiOverallStatus");
+      if (overallPct === null) {
+        statusEl.textContent = "No classes held yet";
+        statusEl.className = "text-[11px] font-semibold mt-1 text-slate-400";
+      } else if (Number(overallPct) >= config.collegiate_threshold) {
+        statusEl.textContent = "Collegiate (Eligible)";
+        statusEl.className = "text-[11px] font-semibold mt-1 text-emerald-400";
+      } else if (Number(overallPct) >= config.non_collegiate_threshold) {
+        statusEl.textContent = "Non-Collegiate (Warning)";
+        statusEl.className = "text-[11px] font-semibold mt-1 text-amber-400";
+      } else {
+        statusEl.textContent = "Dis-Collegiate (Shortage)";
+        statusEl.className = "text-[11px] font-semibold mt-1 text-rose-400";
+      }
+
+      document.getElementById("kpiPresent").textContent = totPresent + totLeave;
+      document.getElementById("kpiLeaveSub").textContent = `Approved Leave: ${totLeave}`;
+      document.getElementById("kpiLate").textContent = totLate;
+      document.getElementById("kpiPenaltySub").textContent = `Penalty Absents: ${totPenalty}`;
+      document.getElementById("kpiAbsent").textContent = totAbsent;
+      document.getElementById("kpiTotalSub").textContent = `Total Classes: ${totClasses}`;
+
+      // Render Course Cards
+      const courseList = courses || [];
+      document.getElementById("courseCountBadge").textContent = `${courseList.length} course(s)`;
+      const coursesEl = document.getElementById("coursesContainer");
+
+      if (!courseList.length) {
+        coursesEl.innerHTML = `
+          <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-400">
+            No attendance records have been synced for Batch ${esc(student.batch)} in this semester yet.
+          </div>`;
+      } else {
+        coursesEl.innerHTML = courseList.map((c) => {
+          const pct = Number(c.percentage || 0);
+          let badgeCls = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+          let barCls = "bg-emerald-500";
+          if (c.eligibility === "Non-Collegiate") {
+            badgeCls = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+            barCls = "bg-amber-500";
+          } else if (c.eligibility === "Dis-Collegiate") {
+            badgeCls = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+            barCls = "bg-rose-500";
+          }
+
+          return `
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h5 class="text-base font-extrabold text-white font-mono">${esc(c.course_code)}</h5>
+                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${badgeCls}">
+                  ${esc(c.eligibility)}
+                </span>
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Attendance Rate</span>
+                  <span class="font-mono font-bold text-white">${pct.toFixed(1)}%</span>
+                </div>
+                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full ${barCls} rounded-full transition-all" style="width: ${Math.min(100, pct)}%"></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-4 gap-2 text-center bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 text-[11px]">
+                <div>
+                  <p class="text-slate-500">Present</p>
+                  <p class="font-mono font-bold text-emerald-400 mt-0.5">${c.present}</p>
+                </div>
+                <div>
+                  <p class="text-slate-500">Late</p>
+                  <p class="font-mono font-bold text-amber-400 mt-0.5">${c.late}</p>
+                </div>
+                <div>
+                  <p class="text-slate-500">Leave</p>
+                  <p class="font-mono font-bold text-cyan-400 mt-0.5">${c.leave}</p>
+                </div>
+                <div>
+                  <p class="text-slate-500">Absent</p>
+                  <p class="font-mono font-bold text-rose-400 mt-0.5">${c.absent}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span>Total Classes Held: <strong class="text-slate-200 font-mono">${c.total_classes}</strong></span>
+                ${c.late_penalty_absents > 0 ? `<span class="text-amber-400">Late Penalty: -${c.late_penalty_absents}</span>` : ""}
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      // Course filter for recent logs
+      const uniqueCourses = [...new Set(cachedLogs.map((l) => l.course_code))].sort();
+      const logFilter = document.getElementById("logCourseFilter");
+      logFilter.innerHTML = `<option value="ALL">All Courses</option>` +
+        uniqueCourses.map((cc) => `<option value="${esc(cc)}">${esc(cc)}</option>`).join("");
+      renderLogs("ALL");
+
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("dashboardView").classList.remove("hidden");
+    }
+
+    async function fetchStudentPortal() {
+      const data = await callRpc("get_student_portal_data", {
+        p_student_id: session.studentId,
+        p_pin: session.pin,
+        p_semester_id: session.semesterId,
+      });
+      if (!data || !data.ok) {
+        throw new Error(data?.error || "Invalid Student ID or Portal PIN.");
+      }
+      renderDashboard(data);
+    }
+
+    // Event Listeners
+    document.getElementById("togglePinBtn").addEventListener("click", () => {
+      const input = document.getElementById("pinInput");
+      const btn = document.getElementById("togglePinBtn");
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "Hide";
+      } else {
+        input.type = "password";
+        btn.textContent = "Show";
+      }
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errBox = document.getElementById("loginError");
+      const btn = document.getElementById("loginBtn");
+      errBox.classList.add("hidden");
+      btn.disabled = true;
+      btn.textContent = "Verifying...";
+
+      session.studentId = document.getElementById("studentIdInput").value.trim();
+      session.pin = document.getElementById("pinInput").value.trim();
+      session.semesterId = null;
+
+      try {
+        await fetchStudentPortal();
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "View My Attendance";
+      }
+    });
+
+    document.getElementById("semesterSelect").addEventListener("change", async (e) => {
+      session.semesterId = e.target.value ? Number(e.target.value) : null;
+      try {
+        await fetchStudentPortal();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("refreshBtn");
+      btn.textContent = "...";
+      try {
+        await fetchStudentPortal();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.textContent = "Refresh";
+      }
+    });
+
+    document.getElementById("logCourseFilter").addEventListener("change", (e) => {
+      renderLogs(e.target.value);
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      session.studentId = "";
+      session.pin = "";
+      session.semesterId = null;
+      document.getElementById("pinInput").value = "";
+      document.getElementById("dashboardView").classList.add("hidden");
+      document.getElementById("loginView").classList.remove("hidden");
+    });
+
+    // Load branding immediately on page open
+    loadBranding();
+  </script>
+</body>
+</html>
