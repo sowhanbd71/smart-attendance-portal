@@ -16,20 +16,30 @@
 }
 
 [data-theme="light"] {
-  --bg-base: #f1f5f9;
-  --bg-surface: rgba(255, 255, 255, 0.88);
-  --bg-surface-solid: #ffffff;
-  --bg-elevated: rgba(255, 255, 255, 0.96);
-  --bg-input: #f8fafc;
-  --border-subtle: rgba(15, 23, 42, 0.1);
-  --border-strong: rgba(15, 23, 42, 0.18);
+  --bg-base: #dce3ed;
+  --bg-surface: rgba(244, 247, 251, 0.9);
+  --bg-surface-solid: #f4f7fb;
+  --bg-elevated: rgba(236, 241, 248, 0.95);
+  --bg-input: #e6ecf4;
+  --border-subtle: rgba(15, 23, 42, 0.11);
+  --border-strong: rgba(15, 23, 42, 0.22);
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --ring-track: rgba(203, 213, 225, 0.85);
-  --shadow-card: 0 14px 36px -16px rgba(15, 23, 42, 0.12);
-  --accent-glow-1: rgba(59, 130, 246, 0.12);
-  --accent-glow-2: rgba(14, 165, 233, 0.1);
+  --text-secondary: #334155;
+  --text-muted: #52627a;
+  --ring-track: rgba(148, 163, 184, 0.45);
+  --shadow-card: 0 12px 30px -14px rgba(15, 23, 42, 0.14);
+  --accent-glow-1: rgba(59, 130, 246, 0.1);
+  --accent-glow-2: rgba(14, 165, 233, 0.08);
+}
+
+/* Deeper, crisp text contrast in Light Mode (prevents neon glare) */
+[data-theme="light"] .text-emerald-400 { color: #047857 !important; }
+[data-theme="light"] .text-amber-400   { color: #b45309 !important; }
+[data-theme="light"] .text-rose-400    { color: #be123c !important; }
+[data-theme="light"] .text-cyan-400    { color: #0e7490 !important; }
+[data-theme="light"] .text-blue-400    { color: #1d4ed8 !important; }
+[data-theme="light"] tbody > tr {
+  border-color: rgba(15, 23, 42, 0.09) !important;
 }
 
 * {
@@ -195,6 +205,55 @@ html, body {
 
 /* Print / Official PDF Report Card Styles */
 .print-only { display: none; }
+
+/* ========== Cross-Device Responsive Polish ========== */
+
+/* Dynamic viewport height (fixes mobile browser address bar cut-off) */
+.min-h-screen-safe {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Prevent accidental auto-zoom on mobile input focus */
+@media (max-width: 639px) {
+  .portal-input,
+  select.portal-input {
+    font-size: 16px !important;
+  }
+
+  /* Compact hero donut on very small phones (320px - 420px) */
+  .hero-donut-wrap {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+}
+
+/* Ultra-narrow screens (Windows Mobile / 320px-380px phones) */
+@media (max-width: 390px) {
+  .glass-card {
+    border-radius: 1.15rem;
+  }
+  .header-brand-sub {
+    display: none;
+  }
+}
+
+/* Touch-friendly tap targets on mobile & tablets */
+@media (pointer: coarse) {
+  button, select, input[type="checkbox"] {
+    min-height: 36px;
+  }
+  input[type="checkbox"] {
+    min-height: 18px;
+  }
+}
+
+/* Wide Desktop Monitors (1440px+) */
+@media (min-width: 1440px) {
+  .portal-container {
+    max-width: 76rem;
+  }
+}
 
 @media print {
   body, html {
