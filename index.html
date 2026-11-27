@@ -40,14 +40,12 @@
     <span id="toastText"></span>
   </div>
 
-  <!-- ==================== LOGIN SCREEN ==================== -->
+  <!-- ==================== VIEW 1: LOGIN SCREEN ==================== -->
   <div id="loginView" class="relative z-10 min-h-screen-safe flex flex-col items-center justify-center p-3.5 sm:p-6">
-    <!-- Top-Right Theme Button -->
     <button
-      id="themeToggleLogin"
       type="button"
       title="Switch Theme"
-      class="no-print fixed top-4 right-4 p-2.5 rounded-xl portal-btn-secondary cursor-pointer"
+      class="theme-toggle-btn no-print fixed top-4 right-4 p-2.5 rounded-xl portal-btn-secondary cursor-pointer"
     >
       <i data-lucide="sun" class="w-4 h-4 text-amber-400 theme-icon-sun"></i>
       <i data-lucide="moon" class="w-4 h-4 text-blue-500 theme-icon-moon hidden"></i>
@@ -92,19 +90,18 @@
 
         <div>
           <label class="block text-[11px] font-bold text-sub uppercase tracking-wider mb-1.5">
-            Portal PIN
+            Portal Password / 6-Digit PIN
           </label>
           <div class="relative">
             <i data-lucide="key-round" class="w-4 h-4 text-dim absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             <input
               id="pinInput"
               type="password"
-              inputmode="numeric"
               required
-              maxlength="6"
+              maxlength="12"
               autocomplete="current-password"
-              placeholder="4–6 digit PIN"
-              class="portal-input w-full rounded-xl pl-10 pr-14 py-3 text-sm font-mono-code tracking-widest"
+              placeholder="Password or 6-digit default PIN"
+              class="portal-input w-full rounded-xl pl-10 pr-14 py-3 text-sm font-mono-code tracking-wider"
             />
             <button
               type="button"
@@ -136,16 +133,249 @@
         >
           Sign In to Attendance Portal
         </button>
+
+        <div class="text-center pt-1">
+          <button
+            id="openForgotBtn"
+            type="button"
+            class="text-xs text-sub hover:text-main transition cursor-pointer"
+          >
+            Forgot Password? <span class="font-bold text-blue-400 hover:underline">Reset Now</span>
+          </button>
+        </div>
       </form>
 
-      <div class="mt-6 pt-4 border-t border-line text-center space-y-1">
+      <div class="mt-5 pt-4 border-t border-line text-center space-y-1">
         <p id="loginSyncMeta" class="text-[11px] font-mono-code text-dim">Connecting to cloud...</p>
-        <p class="text-[11px] text-dim">Forgot your PIN? Contact your department office.</p>
+        <p class="text-[11px] text-dim">First-time users sign in with the 6-digit default PIN.</p>
       </div>
     </div>
   </div>
 
-  <!-- ==================== DASHBOARD SCREEN ==================== -->
+  <!-- ==================== VIEW 2: FIRST-LOGIN CHANGE DEFAULT PASSWORD ==================== -->
+  <div id="changePasswordView" class="hidden relative z-10 min-h-screen-safe flex flex-col items-center justify-center p-3.5 sm:p-6">
+    <button
+      type="button"
+      title="Switch Theme"
+      class="theme-toggle-btn no-print fixed top-4 right-4 p-2.5 rounded-xl portal-btn-secondary cursor-pointer"
+    >
+      <i data-lucide="sun" class="w-4 h-4 text-amber-400 theme-icon-sun"></i>
+      <i data-lucide="moon" class="w-4 h-4 text-blue-500 theme-icon-moon hidden"></i>
+    </button>
+
+    <div class="w-full max-w-md glass-card rounded-3xl p-5 sm:p-8 fade-up space-y-5">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+          <i data-lucide="shield-plus" class="w-7 h-7"></i>
+        </div>
+        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+          First-Time Security Setup
+        </span>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+          Change Your Default Portal Password
+        </h2>
+        <p id="changeStudentInfo" class="text-xs text-sub leading-relaxed"></p>
+      </div>
+
+      <form id="changePassForm" class="space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[11px] font-bold text-sub uppercase tracking-wider">
+              New Password
+            </label>
+            <span id="pwCharCount" class="text-[11px] font-mono-code text-dim">0 / 12</span>
+          </div>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-dim absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input
+              id="newPassInput"
+              type="password"
+              required
+              minlength="6"
+              maxlength="12"
+              autocomplete="new-password"
+              placeholder="6 to 12 characters"
+              class="portal-input w-full rounded-xl pl-10 pr-14 py-3 text-sm font-mono-code"
+            />
+            <button
+              type="button"
+              id="toggleNewPassBtn"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-sub hover:text-main px-1.5 py-1 cursor-pointer"
+            >
+              Show
+            </button>
+          </div>
+
+          <!-- Strength Indicator -->
+          <div class="mt-2 space-y-1">
+            <div class="h-1.5 w-full rounded-full bg-chip overflow-hidden">
+              <div id="pwStrengthBar" class="h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="pwStrengthLabel" class="text-[11px] text-dim font-medium">
+              Letters, numbers, or symbols allowed (any combination)
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-sub uppercase tracking-wider mb-1.5">
+            Confirm New Password
+          </label>
+          <div class="relative">
+            <i data-lucide="check-circle" class="w-4 h-4 text-dim absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input
+              id="confirmPassInput"
+              type="password"
+              required
+              minlength="6"
+              maxlength="12"
+              autocomplete="new-password"
+              placeholder="Re-enter your new password"
+              class="portal-input w-full rounded-xl pl-10 pr-14 py-3 text-sm font-mono-code"
+            />
+            <button
+              type="button"
+              id="toggleConfirmPassBtn"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-sub hover:text-main px-1.5 py-1 cursor-pointer"
+            >
+              Show
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Requirement Checklist -->
+        <div class="bg-chip rounded-xl p-3 space-y-1.5 text-[11px]">
+          <div id="ruleLen" class="flex items-center gap-2 text-dim">
+            <i data-lucide="circle" class="w-3.5 h-3.5 shrink-0"></i>
+            <span>6 to 12 characters (letters, numbers, or symbols)</span>
+          </div>
+          <div id="ruleDiff" class="flex items-center gap-2 text-dim">
+            <i data-lucide="circle" class="w-3.5 h-3.5 shrink-0"></i>
+            <span>Different from your default 6-digit PIN</span>
+          </div>
+          <div id="ruleMatch" class="flex items-center gap-2 text-dim">
+            <i data-lucide="circle" class="w-3.5 h-3.5 shrink-0"></i>
+            <span>Both passwords match</span>
+          </div>
+        </div>
+
+        <div
+          id="changePassError"
+          class="hidden rounded-xl bg-rose-500/15 border border-rose-500/35 text-rose-400 text-xs px-3.5 py-2.5 flex items-center gap-2"
+        >
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="changePassErrorText"></span>
+        </div>
+
+        <button
+          id="changePassBtn"
+          type="submit"
+          class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-45 text-white text-sm font-bold transition shadow-lg shadow-emerald-600/20 cursor-pointer"
+        >
+          Set New Password &amp; Sign In
+        </button>
+
+        <button
+          id="cancelChangePassBtn"
+          type="button"
+          class="w-full py-2.5 rounded-xl portal-btn-secondary text-xs font-bold cursor-pointer"
+        >
+          Back to Sign In
+        </button>
+      </form>
+
+      <p class="text-[11px] text-dim text-center leading-relaxed pt-2 border-t border-line">
+        Tip: Use a separate password for this portal—do not reuse your personal banking or social media passwords.
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW 3: FORGOT PASSWORD / RECOVERY ==================== -->
+  <div id="forgotView" class="hidden relative z-10 min-h-screen-safe flex flex-col items-center justify-center p-3.5 sm:p-6">
+    <button
+      type="button"
+      title="Switch Theme"
+      class="theme-toggle-btn no-print fixed top-4 right-4 p-2.5 rounded-xl portal-btn-secondary cursor-pointer"
+    >
+      <i data-lucide="sun" class="w-4 h-4 text-amber-400 theme-icon-sun"></i>
+      <i data-lucide="moon" class="w-4 h-4 text-blue-500 theme-icon-moon hidden"></i>
+    </button>
+
+    <div class="w-full max-w-md glass-card rounded-3xl p-5 sm:p-8 fade-up space-y-5">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-blue-600/25 to-cyan-500/20 border border-blue-500/35 flex items-center justify-center text-cyan-400">
+          <i data-lucide="mail-search" class="w-7 h-7"></i>
+        </div>
+        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+          Automated Email Recovery
+        </span>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+          Recover Portal Password
+        </h2>
+        <p class="text-xs text-sub leading-relaxed">
+          Enter your Student ID below. Your portal credentials will be emailed automatically to your registered email address.
+        </p>
+      </div>
+
+      <form id="forgotForm" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-bold text-sub uppercase tracking-wider mb-1.5">
+            Student ID
+          </label>
+          <div class="relative">
+            <i data-lucide="id-card" class="w-4 h-4 text-dim absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input
+              id="forgotStudentIdInput"
+              type="text"
+              required
+              placeholder="Enter your Student ID"
+              class="portal-input w-full rounded-xl pl-10 pr-4 py-3 text-sm font-mono-code font-medium"
+            />
+          </div>
+        </div>
+
+        <div
+          id="forgotError"
+          class="hidden rounded-xl bg-rose-500/15 border border-rose-500/35 text-rose-400 text-xs px-3.5 py-3 flex items-start gap-2 leading-relaxed"
+        >
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+          <span id="forgotErrorText"></span>
+        </div>
+
+        <div
+          id="forgotSuccess"
+          class="hidden rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 text-xs px-3.5 py-3 flex items-start gap-2 leading-relaxed"
+        >
+          <i data-lucide="mail-check" class="w-4 h-4 shrink-0 mt-0.5"></i>
+          <span id="forgotSuccessText"></span>
+        </div>
+
+        <button
+          id="forgotBtn"
+          type="submit"
+          class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 text-white text-sm font-bold transition shadow-lg shadow-blue-600/25 cursor-pointer"
+        >
+          Request Password
+        </button>
+
+        <button
+          id="backToLoginBtn"
+          type="button"
+          class="w-full py-2.5 rounded-xl portal-btn-secondary text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+          <span>Back to Sign In</span>
+        </button>
+      </form>
+
+      <div class="pt-3 border-t border-line text-[11px] text-dim text-center leading-relaxed space-y-1">
+        <p>Security Policy: Password recovery emails can be requested once every <strong>3 days</strong>.</p>
+        <p>Didn&apos;t receive an email or no email registered? Contact your department or university office.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW 4: DASHBOARD SCREEN ==================== -->
   <div id="dashboardView" class="hidden relative z-10 min-h-screen-safe pb-24 md:pb-12 fade-up">
     <!-- Official Print Header (Only visible in PDF / Print) -->
     <div class="print-only max-w-6xl mx-auto px-4 pt-4 pb-3 border-b-2 border-slate-800 mb-4">
@@ -198,10 +428,9 @@
           </button>
 
           <button
-            id="themeToggleDash"
             type="button"
             title="Switch Light / Dark Mode"
-            class="p-2 rounded-xl portal-btn-secondary cursor-pointer shrink-0"
+            class="theme-toggle-btn p-2 rounded-xl portal-btn-secondary cursor-pointer shrink-0"
           >
             <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400 theme-icon-sun"></i>
             <i data-lucide="moon" class="w-3.5 h-3.5 text-blue-500 theme-icon-moon hidden"></i>
@@ -335,7 +564,7 @@
           </div>
         </div>
 
-        <!-- Mobile-Only Quick Course Preview (Hidden on Desktop where Full Courses show below) -->
+        <!-- Mobile-Only Quick Course Preview -->
         <div class="md:hidden no-print glass-card rounded-2xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold uppercase tracking-wider text-main">Quick Course Snapshot</h4>

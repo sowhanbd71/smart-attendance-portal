@@ -13,6 +13,7 @@
     activeMobileTab: "overview",
     portalData: null,
     cachedLogs: [],
+    pendingStudent: null,
   };
 
   // ---------- Helpers ----------
@@ -52,7 +53,7 @@
     txt.textContent = msg;
     box.classList.remove("hidden");
     clearTimeout(box._timer);
-    box._timer = setTimeout(() => box.classList.add("hidden"), 3200);
+    box._timer = setTimeout(() => box.classList.add("hidden"), 3500);
   }
 
   function refreshIcons() {
@@ -61,13 +62,28 @@
     }
   }
 
+  function showView(viewName) {
+    const views = {
+      login: $("loginView"),
+      changePassword: $("changePasswordView"),
+      forgot: $("forgotView"),
+      dashboard: $("dashboardView"),
+    };
+    Object.entries(views).forEach(([key, el]) => {
+      if (!el) return;
+      el.classList.toggle("hidden", key !== viewName);
+    });
+    window.scrollTo({ top: 0 });
+    refreshIcons();
+  }
+
   // ---------- Theme Switcher ----------
 
   function applyTheme(theme) {
     const t = theme === "light" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", t);
     const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) metaTheme.setAttribute("content", t === "light" ? "#f1f5f9" : "#0b1120");
+    if (metaTheme) metaTheme.setAttribute("content", t === "light" ? "#dce3ed" : "#0b1120");
     try {
       localStorage.setItem(THEME_STORAGE_KEY, t);
     } catch {}
@@ -85,7 +101,7 @@
     applyTheme(current === "dark" ? "light" : "dark");
   }
 
-  // ---------- Supabase RPC Client ----------
+  // ---------- Supabase RPC & Edge Function Clients ----------
 
   async function callRpc(fnName, body = {}) {
     if (!SUPABASE_URL.startsWith("https://") || SUPABASE_URL.includes("তোমার-প্রজেক্ট")) {
@@ -107,6 +123,117 @@
       throw new Error(data?.message || data?.hint || `Cloud request failed (${res.status})`);
     }
     return data;
+  }
+
+  async function callEdgeFunction(fnName, body = {}) {
+    if (!SUPABASE_URL.startsWith("https://") || SUPABASE_URL.includes("তোমার-প্রজেক্ট")) {
+      throw new Error("Portal config missing. Set SUPABASE_URL and SUPABASE_ANON_KEY in config.js.");
+    }
+
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(
+        data?.error ||
+          data?.message ||
+          "Email recovery service is not active yet. Please contact your department or university office."
+      );
+    }
+    return data;
+  }
+
+  // ---------- Password Strength & Live Checklist ----------
+
+  function setRuleVisual(el, ok) {
+    if (!el) return;
+    el.className = `flex items-center gap-2 ${ok ? "text-emerald-400 font-semibold" : "text-dim"}`;
+    const icon = el.querySelector("svg, i");
+    if (icon) {
+      const nextIcon = document.createElement("i");
+      nextIcon.setAttribute("data-lucide", ok ? "check-circle-2" : "circle");
+      nextIcon.className = "w-3.5 h-3.5 shrink-0";
+      icon.replaceWith(nextIcon);
+    }
+  }
+
+  function updatePasswordFormFeedback() {
+    const pw = $("newPassInput")?.value || "";
+    const cf = $("confirmPassInput")?.value || "";
+    const curPin = state.pin || "";
+
+    $("pwCharCount").textContent = `${pw.length} / 12`;
+
+    const lenOk = pw.length >= 6 && pw.length <= 12;
+    const diffOk = pw.length > 0 && pw !== curPin;
+    const matchOk = pw.length > 0 && pw === cf;
+
+    setRuleVisual($("ruleLen"), lenOk);
+    setRuleVisual($("ruleDiff"), diffOk);
+    setRuleVisual($("ruleMatch"), matchOk);
+    refreshIcons();
+
+    // Strength meter calculation (optional variety bonus)
+    let score = 0;
+    if (pw.length >= 6) score += 1;
+    if (pw.length >= 8) score += 1;
+    if (/[a-zA-Z]/.test(pw) && /\d/.test(pw)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(pw)) score += 1;
+
+    const bar = $("pwStrengthBar");
+    const lbl = $("pwStrengthLabel");
+
+    if (!pw.length) {
+      bar.style.width = "0%";
+      bar.className = "h-full rounded-full transition-all duration-300";
+      lbl.textContent = "Letters, numbers, or symbols allowed (any combination)";
+      lbl.className = "text-[11px] text-dim font-medium";
+    } else if (pw.length < 6) {
+      bar.style.width = "22%";
+      bar.className = "h-full rounded-full bg-rose-500 transition-all duration-300";
+      lbl.textContent = "Too short — enter at least 6 characters";
+      lbl.className = "text-[11px] text-rose-400 font-semibold";
+    } else if (score <= 1) {
+      bar.style.width = "45%";
+      bar.className = "h-full rounded-full bg-amber-500 transition-all duration-300";
+      lbl.textContent = "Valid password (Basic strength)";
+      lbl.className = "text-[11px] text-amber-400 font-semibold";
+    } else if (score === 2) {
+      bar.style.width = "75%";
+      bar.className = "h-full rounded-full bg-cyan-500 transition-all duration-300";
+      lbl.textContent = "Good password strength";
+      lbl.className = "text-[11px] text-cyan-400 font-semibold";
+    } else {
+      bar.style.width = "100%";
+      bar.className = "h-full rounded-full bg-emerald-500 transition-all duration-300";
+      lbl.textContent = "Strong password";
+      lbl.className = "text-[11px] text-emerald-400 font-semibold";
+    }
+
+    $("changePassBtn").disabled = !(lenOk && diffOk && matchOk);
+  }
+
+  function openChangePasswordScreen(student) {
+    state.pendingStudent = student;
+    $("changeStudentInfo").innerHTML = `Welcome, <strong class="text-main">${esc(
+      student.name
+    )}</strong> (<span class="font-mono-code text-blue-400">${esc(
+      student.student_id
+    )}</span>). Create your personal password to continue.`;
+    $("newPassInput").value = "";
+    $("confirmPassInput").value = "";
+    $("changePassError").classList.add("hidden");
+    showView("changePassword");
+    updatePasswordFormFeedback();
+    setTimeout(() => $("newPassInput")?.focus(), 80);
   }
 
   // ---------- Smart Attendance Predictor ----------
@@ -273,7 +400,6 @@
             </p>
           </div>
 
-          <!-- Mini SVG Donut Meter -->
           <div class="relative w-14 h-14 shrink-0 flex items-center justify-center">
             <svg class="w-14 h-14" viewBox="0 0 56 56">
               <circle class="ring-track" cx="28" cy="28" r="${radius}" fill="none" stroke-width="4.5"></circle>
@@ -284,7 +410,6 @@
           </div>
         </div>
 
-        <!-- 4-Stat Pill Grid -->
         <div class="grid grid-cols-4 gap-2 text-center">
           <div class="bg-chip rounded-xl py-2 px-1">
             <p class="text-[10px] uppercase tracking-wider text-dim font-semibold">Present</p>
@@ -304,7 +429,6 @@
           </div>
         </div>
 
-        <!-- Smart Attendance Predictor Strip -->
         <div class="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium ${predToneMap[pred.tone]}">
           <i data-lucide="${pred.icon}" class="w-3.5 h-3.5 shrink-0"></i>
           <span>${esc(pred.text)}</span>
@@ -313,7 +437,7 @@
     `;
   }
 
-  // ---------- Render Attendance Logs (Desktop Table + Mobile Cards) ----------
+  // ---------- Render Attendance Logs ----------
 
   function renderLogs() {
     const courseVal = $("logCourseFilter").value || "ALL";
@@ -409,12 +533,10 @@
     $("dashPolicyText").textContent =
       `Policy: ${penText} • Collegiate ≥ ${config.collegiate_threshold}% • Non-Collegiate ≥ ${config.non_collegiate_threshold}%`;
 
-    // Print Report Card Header Metadata
     $("printHeaderOrg").textContent = config.org_full_name || "Smart Attendance";
     $("printHeaderDept").textContent = `${config.org_short_name || ""}${dept} — Official Student Attendance Statement`;
     $("printHeaderDate").textContent = `Generated: ${new Date().toLocaleString()}`;
 
-    // Populate Semester Dropdown
     const semSelect = $("semesterSelect");
     const curSem = state.semesterId === null ? "" : String(state.semesterId);
     semSelect.innerHTML =
@@ -427,7 +549,6 @@
         .join("");
     semSelect.value = curSem;
 
-    // Aggregate KPIs
     let totClasses = 0,
       totPresent = 0,
       totLate = 0,
@@ -450,7 +571,6 @@
     const overallPct = totClasses > 0 ? (effectiveAttended / totClasses) * 100 : null;
     const overallMeta = getStatusMeta(overallPct, config);
 
-    // Animate Overall Donut Ring (r = 54, circ = 339.292)
     const circ = 2 * Math.PI * 54;
     const ringEl = $("overallRingProgress");
     ringEl.style.stroke = overallMeta.stroke;
@@ -467,7 +587,6 @@
     badgeEl.textContent = overallMeta.label;
     badgeEl.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${overallMeta.badge}`;
 
-    // KPI Cards
     $("kpiPresent").textContent = totPresent + totLeave;
     $("kpiLeaveSub").textContent = `Approved Leave: ${totLeave}`;
     $("kpiLate").textContent = totLate;
@@ -478,13 +597,12 @@
     $("kpiEligibleSub").textContent =
       courseList.length > 0 ? `${eligibleCourses}/${courseList.length} Collegiate` : "No active courses";
 
-    // Full Courses Grid
     $("courseCountBadge").textContent = `${courseList.length} course${courseList.length === 1 ? "" : "s"}`;
     const coursesEl = $("coursesContainer");
 
     if (!courseList.length) {
       coursesEl.innerHTML = `
-        <div class="md:col-span-2 glass-card rounded-2xl p-10 text-center space-y-2">
+        <div class="md:col-span-2 xl:col-span-3 glass-card rounded-2xl p-10 text-center space-y-2">
           <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-blue-400">
             <i data-lucide="calendar-clock" class="w-6 h-6"></i>
           </div>
@@ -497,7 +615,6 @@
       coursesEl.innerHTML = courseList.map((c) => buildCourseCardHtml(c, config)).join("");
     }
 
-    // Mobile Overview Quick Course Snapshot (Shows top 2 courses on phone Overview tab)
     const previewEl = $("overviewCoursesPreview");
     const viewAllBtn = $("viewAllCoursesBtn");
     if (courseList.length > 0) {
@@ -525,7 +642,6 @@
       viewAllBtn.classList.add("hidden");
     }
 
-    // Populate Log Course Filter
     const uniqueCourses = [...new Set(state.cachedLogs.map((l) => l.course_code))].sort();
     $("logCourseFilter").innerHTML =
       `<option value="ALL">All Courses</option>` +
@@ -534,10 +650,8 @@
     $("logSearchInput").value = "";
     renderLogs();
 
-    $("loginView").classList.add("hidden");
-    $("dashboardView").classList.remove("hidden");
+    showView("dashboard");
     setMobileTab(state.activeMobileTab);
-    refreshIcons();
   }
 
   async function fetchStudentPortal() {
@@ -547,15 +661,29 @@
       p_semester_id: state.semesterId,
     });
     if (!data || !data.ok) {
-      throw new Error(data?.error || "Invalid Student ID or Portal PIN.");
+      throw new Error(data?.error || "Invalid Student ID or Password.");
+    }
+    if (data.must_change_password) {
+      openChangePasswordScreen(data.student);
+      return { mustChange: true };
     }
     renderDashboard(data);
+    return { mustChange: false };
   }
 
   // ---------- Event Binding ----------
 
+  function wirePasswordToggle(inputId, btnId) {
+    $(btnId)?.addEventListener("click", () => {
+      const inp = $(inputId);
+      const show = inp.type === "password";
+      inp.type = show ? "text" : "password";
+      $(btnId).textContent = show ? "Hide" : "Show";
+    });
+  }
+
   function initEvents() {
-    // Graceful Logo Fallback if logo.png missing
+    // Graceful Logo Fallback
     [
       ["brandLogoImg", "brandLogoFallback"],
       ["dashLogoImg", "dashLogoFallback"],
@@ -570,16 +698,15 @@
       }
     });
 
-    $("themeToggleLogin")?.addEventListener("click", toggleTheme);
-    $("themeToggleDash")?.addEventListener("click", toggleTheme);
-
-    $("togglePinBtn")?.addEventListener("click", () => {
-      const inp = $("pinInput");
-      const show = inp.type === "password";
-      inp.type = show ? "text" : "password";
-      $("togglePinBtn").textContent = show ? "Hide" : "Show";
+    document.querySelectorAll(".theme-toggle-btn").forEach((btn) => {
+      btn.addEventListener("click", toggleTheme);
     });
 
+    wirePasswordToggle("pinInput", "togglePinBtn");
+    wirePasswordToggle("newPassInput", "toggleNewPassBtn");
+    wirePasswordToggle("confirmPassInput", "toggleConfirmPassBtn");
+
+    // Login Form Submit
     $("loginForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const errBox = $("loginError");
@@ -595,8 +722,8 @@
       state.semesterId = null;
 
       try {
-        await fetchStudentPortal();
-        if ($("rememberCheck")?.checked) {
+        const res = await fetchStudentPortal();
+        if (!res.mustChange && $("rememberCheck")?.checked) {
           try {
             localStorage.setItem(
               SESSION_STORAGE_KEY,
@@ -613,6 +740,134 @@
       }
     });
 
+    // Change Default Password Live Validation & Submit
+    $("newPassInput")?.addEventListener("input", updatePasswordFormFeedback);
+    $("confirmPassInput")?.addEventListener("input", updatePasswordFormFeedback);
+
+    $("changePassForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errBox = $("changePassError");
+      const errTxt = $("changePassErrorText");
+      const btn = $("changePassBtn");
+
+      const newPass = ($("newPassInput").value || "").trim();
+      const confirmPass = ($("confirmPassInput").value || "").trim();
+
+      errBox.classList.add("hidden");
+
+      if (newPass.length < 6 || newPass.length > 12) {
+        errTxt.textContent = "Password must be between 6 and 12 characters.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+      if (newPass === state.pin) {
+        errTxt.textContent = "New password must be different from your default 6-digit PIN.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+      if (newPass !== confirmPass) {
+        errTxt.textContent = "Passwords do not match. Please re-enter carefully.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="inline-flex items-center gap-2"><span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>Saving New Password...</span>`;
+
+      try {
+        const res = await callRpc("change_student_portal_password", {
+          p_student_id: state.studentId,
+          p_current_pin: state.pin,
+          p_new_password: newPass,
+        });
+        if (!res || !res.ok) {
+          throw new Error(res?.error || "Could not update password. Please try again.");
+        }
+
+        state.pin = newPass;
+        if ($("rememberCheck")?.checked) {
+          try {
+            localStorage.setItem(
+              SESSION_STORAGE_KEY,
+              JSON.stringify({ studentId: state.studentId, pin: state.pin })
+            );
+          } catch {}
+        }
+
+        await fetchStudentPortal();
+        showToast("New password saved! Welcome to your portal.");
+      } catch (err) {
+        errTxt.textContent = err.message;
+        errBox.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Set New Password & Sign In";
+      }
+    });
+
+    $("cancelChangePassBtn")?.addEventListener("click", () => {
+      state.pin = "";
+      $("pinInput").value = "";
+      showView("login");
+    });
+
+    // Forgot Password View Navigation & Request
+    $("openForgotBtn")?.addEventListener("click", () => {
+      $("forgotError").classList.add("hidden");
+      $("forgotSuccess").classList.add("hidden");
+      const typedId = ($("studentIdInput")?.value || "").trim();
+      if (typedId) $("forgotStudentIdInput").value = typedId;
+      showView("forgot");
+      setTimeout(() => $("forgotStudentIdInput")?.focus(), 80);
+    });
+
+    $("backToLoginBtn")?.addEventListener("click", () => {
+      showView("login");
+    });
+
+    $("forgotForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errBox = $("forgotError");
+      const errTxt = $("forgotErrorText");
+      const okBox = $("forgotSuccess");
+      const okTxt = $("forgotSuccessText");
+      const btn = $("forgotBtn");
+
+      errBox.classList.add("hidden");
+      okBox.classList.add("hidden");
+
+      const sid = ($("forgotStudentIdInput").value || "").trim();
+      if (!sid) {
+        errTxt.textContent = "Please enter your Student ID.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="inline-flex items-center gap-2"><span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>Sending Recovery Email...</span>`;
+
+      try {
+        const res = await callEdgeFunction("send-password-recovery", { student_id: sid });
+        if (!res || !res.ok) {
+          throw new Error(
+            res?.error ||
+              "Unable to send recovery email. Please contact your department or university office."
+          );
+        }
+        okTxt.textContent =
+          res.message ||
+          "Your credentials have been emailed to your registered address. Please check your Inbox or Spam folder.";
+        okBox.classList.remove("hidden");
+      } catch (err) {
+        errTxt.textContent = err.message;
+        errBox.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Request Password";
+      }
+    });
+
+    // Dashboard Controls
     $("semesterSelect")?.addEventListener("change", async (e) => {
       state.semesterId = e.target.value ? Number(e.target.value) : null;
       try {
@@ -636,9 +891,7 @@
       }
     });
 
-    $("printBtn")?.addEventListener("click", () => {
-      window.print();
-    });
+    $("printBtn")?.addEventListener("click", () => window.print());
 
     $("logoutBtn")?.addEventListener("click", () => {
       state.studentId = "";
@@ -649,9 +902,7 @@
         localStorage.removeItem(SESSION_STORAGE_KEY);
       } catch {}
       $("pinInput").value = "";
-      $("dashboardView").classList.add("hidden");
-      $("loginView").classList.remove("hidden");
-      refreshIcons();
+      showView("login");
     });
 
     $("logCourseFilter")?.addEventListener("change", renderLogs);
@@ -680,7 +931,6 @@
     refreshIcons();
     loadBranding();
 
-    // Auto-restore saved mobile session if "Remember Me" was enabled
     try {
       const raw = localStorage.getItem(SESSION_STORAGE_KEY);
       if (raw) {
